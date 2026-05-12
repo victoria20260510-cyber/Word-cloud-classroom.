@@ -6,13 +6,14 @@
 <title>分级词云诊断 · Interactive Word Cloud</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+SC:wght@300;400;700&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, push, onValue, remove, serverTimestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-// ── Firebase 配置 ──
 const firebaseConfig = {
   apiKey: "AIzaSyBqavaH_gSM36ymWCRKzFuOGdQBOjn32nI",
   authDomain: "word-cloud-classroom-56cf5.firebaseapp.com",
@@ -25,168 +26,192 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db  = getDatabase(app);
-const wordsRef = ref(db, "words");
+const wordsRef = ref(db, "words2");
 
-// 挂载到全局供页面其他脚本调用
-window._fbPush  = (word) => push(wordsRef, { word, ts: serverTimestamp() });
-window._fbClear = ()     => remove(wordsRef);
-window._fbListen= (cb)   => onValue(wordsRef, snap => {
+window._fbPush   = (w) => push(wordsRef, { word: w, ts: serverTimestamp() });
+window._fbClear  = ()  => remove(wordsRef);
+window._fbListen = (cb)=> onValue(wordsRef, snap => {
   const data = snap.val();
   cb(data ? Object.values(data).map(v => v.word) : []);
 });
 window._fbReady = true;
 window.dispatchEvent(new Event("fb-ready"));
 </script>
+
 <style>
 :root {
   --bg:#080c14; --bg2:#0d1220; --bg3:#111828; --panel:#0f1621;
   --border:#1a2640; --border2:#253550;
-  --gray:#5a6a84; --gray2:#7a8aa8;
-  --gold:#f0c040; --gold2:#ffd060; --gold-glow:rgba(240,192,64,0.35);
-  --blue:#4a9eff; --blue2:#7ab8ff; --blue-soft:rgba(74,158,255,0.12);
+  --gray:#5a6a84; --gray2:#8a9ab8;
+  --gold:#f0c040; --gold2:#ffd060; --gold-glow:rgba(240,192,64,0.4);
+  --blue:#4a9eff; --blue2:#7ab8ff;
   --red:#ff4f6a; --green:#3dd68c;
   --ink:#d8e8f8; --ink2:#8898b8; --ink3:#3a4a64;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'JetBrains Mono',monospace}
 body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-  background-image:linear-gradient(rgba(74,158,255,0.03) 1px,transparent 1px),
-  linear-gradient(90deg,rgba(74,158,255,0.03) 1px,transparent 1px);
+  background-image:linear-gradient(rgba(74,158,255,0.025) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(74,158,255,0.025) 1px,transparent 1px);
   background-size:44px 44px}
 
-/* ══════════ 教师大屏 ══════════ */
+/* ── 教师大屏 ── */
 #teacher{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column}
 
 /* HUD */
-#hud{height:58px;flex-shrink:0;background:rgba(8,12,20,0.96);border-bottom:1px solid var(--border);
-  backdrop-filter:blur(10px);display:flex;align-items:center;padding:0 20px;gap:14px;z-index:100}
-.hud-title{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:0.07em;color:var(--ink);line-height:1;white-space:nowrap}
+#hud{height:56px;flex-shrink:0;background:rgba(8,12,20,0.97);border-bottom:1px solid var(--border);
+  backdrop-filter:blur(10px);display:flex;align-items:center;padding:0 18px;gap:12px;z-index:100}
+.hud-title{font-family:'Bebas Neue',sans-serif;font-size:1.2rem;letter-spacing:0.07em;
+  color:var(--ink);line-height:1;white-space:nowrap}
 .hud-title em{color:var(--gold);font-style:normal}
 .legend{display:flex;gap:10px;align-items:center;flex-shrink:0}
-.leg{display:flex;align-items:center;gap:4px;font-size:0.58rem;color:var(--ink2);white-space:nowrap}
+.leg{display:flex;align-items:center;gap:4px;font-size:0.57rem;color:var(--ink2);white-space:nowrap}
 .leg-dot{width:7px;height:7px;border-radius:50%}
-#word-count{font-size:0.6rem;color:var(--ink3);border:1px solid var(--border);border-radius:5px;padding:3px 8px;white-space:nowrap}
+#word-count{font-size:0.58rem;color:var(--ink3);border:1px solid var(--border);
+  border-radius:5px;padding:2px 8px;white-space:nowrap}
 #word-count b{color:var(--blue2)}
 .spacer{flex:1}
 #timer-box{display:flex;align-items:center;gap:8px;flex-shrink:0}
-#timer-disp{font-family:'Bebas Neue',sans-serif;font-size:1.9rem;letter-spacing:0.05em;
-  color:var(--gold);line-height:1;min-width:62px;text-align:center;
-  text-shadow:0 0 16px var(--gold-glow);transition:color 0.3s}
-#timer-disp.urgent{color:var(--red);text-shadow:0 0 16px rgba(255,79,106,0.5);animation:blink 0.5s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
-.hbtn{font-family:'Bebas Neue',sans-serif;font-size:0.72rem;letter-spacing:0.1em;
-  border:none;border-radius:6px;padding:6px 13px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+#timer-disp{font-family:'Bebas Neue',sans-serif;font-size:1.85rem;letter-spacing:0.05em;
+  color:var(--gold);line-height:1;min-width:60px;text-align:center;
+  text-shadow:0 0 14px var(--gold-glow);transition:color 0.3s}
+#timer-disp.urgent{color:var(--red);text-shadow:0 0 14px rgba(255,79,106,0.5);
+  animation:blink 0.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.45}}
+.hbtn{font-family:'Bebas Neue',sans-serif;font-size:0.7rem;letter-spacing:0.1em;
+  border:none;border-radius:6px;padding:6px 12px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
 #btn-start{background:var(--gold);color:#080c14}
 #btn-start:hover{background:var(--gold2);transform:scale(1.04)}
 #btn-start:disabled{background:var(--border2);color:var(--ink3);cursor:default;transform:none}
 #btn-qr{background:transparent;border:1px solid var(--border2);color:var(--blue2)}
-#btn-qr:hover{border-color:var(--blue);background:var(--blue-soft)}
+#btn-qr:hover{border-color:var(--blue);background:rgba(74,158,255,0.1)}
 #btn-unlock-hud{background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);color:var(--gold)}
 #btn-unlock-hud:hover{background:rgba(240,192,64,0.18)}
+#conn-dot{width:8px;height:8px;border-radius:50%;background:var(--gray);flex-shrink:0;transition:background 0.3s}
+#conn-dot.ok{background:var(--green);box-shadow:0 0 6px rgba(61,214,140,0.5)}
 
 /* 主区域 */
 #mid{flex:1;display:flex;overflow:hidden}
 
 /* 左侧面板 */
-#left-panel{width:230px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
-  display:flex;flex-direction:column;padding:12px 11px;gap:10px;overflow-y:auto}
-.sec-lbl{font-size:0.53rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink3);
+#left-panel{width:225px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:11px 10px;gap:9px;overflow-y:auto}
+.sec-lbl{font-size:0.52rem;text-transform:uppercase;letter-spacing:0.14em;color:var(--ink3);
   display:flex;align-items:center;gap:5px}
 .sec-lbl::before{content:'';width:10px;height:1.5px;background:var(--blue)}
 .irow{display:flex;gap:5px}
 #word-input{flex:1;background:var(--bg3);border:1.5px solid var(--border);border-radius:6px;
-  color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:0.78rem;
+  color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:0.77rem;
   padding:7px 9px;outline:none;transition:border-color 0.2s,box-shadow 0.2s}
 #word-input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(74,158,255,0.1)}
-#word-input::placeholder{color:var(--ink3);font-size:0.7rem}
-#btn-send{background:var(--blue);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:0.75rem;
+#word-input::placeholder{color:var(--ink3);font-size:0.68rem}
+#btn-send{background:var(--blue);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:0.73rem;
   letter-spacing:0.08em;border:none;border-radius:6px;padding:0 11px;cursor:pointer;transition:all 0.2s}
 #btn-send:hover{background:var(--blue2)}
 .qwrap{display:flex;flex-wrap:wrap;gap:3px}
 .qb{background:var(--bg3);border:1px solid var(--border);border-radius:4px;
-  color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:0.62rem;
+  color:var(--ink2);font-family:'JetBrains Mono',monospace;font-size:0.61rem;
   padding:2px 6px;cursor:pointer;transition:all 0.13s}
 .qb:hover{border-color:var(--blue);color:var(--blue2);background:rgba(74,158,255,0.07)}
 .divl{height:1px;background:var(--border)}
 #btn-unlock-panel{background:rgba(240,192,64,0.08);border:1.5px solid rgba(240,192,64,0.28);
-  color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:0.7rem;letter-spacing:0.1em;
+  color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:0.68rem;letter-spacing:0.1em;
   border-radius:7px;padding:8px;cursor:pointer;transition:all 0.2s;text-align:center}
-#btn-unlock-panel:hover{background:rgba(240,192,64,0.15);box-shadow:0 0 14px var(--gold-glow)}
-#log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;min-height:60px}
-.log-e{font-size:0.62rem;padding:2px 7px;border-radius:4px;border-left:2px solid;
-  background:rgba(255,255,255,0.015);animation:sli 0.25s ease}
+#btn-unlock-panel:hover{background:rgba(240,192,64,0.15);box-shadow:0 0 12px var(--gold-glow)}
+#log{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;min-height:40px}
+.log-e{font-size:0.6rem;padding:2px 6px;border-radius:4px;border-left:2px solid;
+  background:rgba(255,255,255,0.015);animation:sli 0.22s ease}
 @keyframes sli{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}
 .log-basic{border-color:var(--gray);color:var(--gray2)}
 .log-gold{border-color:var(--gold);color:var(--gold2)}
 
-/* 词云 */
+/* 词云SVG */
 #cloud-wrap{flex:1;position:relative;overflow:hidden}
 #cloud-svg{width:100%;height:100%}
+
+/* 词样式 */
 .w-basic{fill:var(--gray);font-family:'JetBrains Mono',monospace;cursor:default}
-.w-gold{fill:var(--gold);font-family:'Noto Sans SC',sans-serif;font-weight:700;cursor:pointer;
-  filter:drop-shadow(0 0 7px var(--gold-glow));animation:floatW 3.5s ease-in-out infinite}
-.w-gold:nth-child(odd){animation-duration:4.2s}
-.w-gold:nth-child(3n){animation-duration:2.8s;animation-delay:-1.3s}
-@keyframes floatW{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-.w-enter{animation:wPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both}
-@keyframes wPop{from{opacity:0;transform:scale(0.3)}to{opacity:1;transform:scale(1)}}
+.w-gold{
+  fill:var(--gold);
+  font-family:'Noto Sans SC',sans-serif;font-weight:700;
+  cursor:pointer;
+  filter:drop-shadow(0 0 8px var(--gold-glow));
+  animation:floatW 3.5s ease-in-out infinite;
+}
+.w-gold:nth-child(2n){animation-duration:4.1s;animation-delay:-0.8s}
+.w-gold:nth-child(3n){animation-duration:2.9s;animation-delay:-1.6s}
+.w-gold:nth-child(4n){animation-duration:3.8s;animation-delay:-2.2s}
+@keyframes floatW{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.w-enter{animation:wPop 0.45s cubic-bezier(0.34,1.56,0.64,1) both}
+@keyframes wPop{from{opacity:0;transform:scale(0.2)}to{opacity:1;transform:scale(1)}}
 
 /* 底部状态栏 */
-#statusbar{height:58px;flex-shrink:0;background:rgba(8,12,20,0.96);border-top:1px solid var(--border);
-  display:flex;align-items:center;padding:0 20px;gap:16px}
-.sblk{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:44px}
-.sn{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;line-height:1}
-.sn.gray{color:var(--gray2)} .sn.gold{color:var(--gold);text-shadow:0 0 10px var(--gold-glow)}
+#statusbar{height:56px;flex-shrink:0;background:rgba(8,12,20,0.97);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 18px;gap:14px}
+.sblk{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:42px}
+.sn{font-family:'Bebas Neue',sans-serif;font-size:1.45rem;line-height:1}
+.sn.gray{color:var(--gray2)}.sn.gold{color:var(--gold);text-shadow:0 0 8px var(--gold-glow)}
 .sl{font-size:0.5rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink3)}
-.sdv{width:1px;height:30px;background:var(--border)}
+.sdv{width:1px;height:28px;background:var(--border)}
 .tbars{flex:1;display:flex;flex-direction:column;gap:4px}
-.brow{display:flex;align-items:center;gap:6px}
-.blbl{font-size:0.54rem;color:var(--ink3);width:48px;text-align:right}
-.btrack{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
-.bfill{height:100%;border-radius:3px;transition:width 0.5s ease;width:0%}
-.bfill.gray{background:var(--gray)} .bfill.gold{background:var(--gold);box-shadow:0 0 6px var(--gold-glow)}
-.bpct{font-size:0.54rem;color:var(--ink3);width:24px}
-#phase-msg{font-family:'Noto Sans SC',sans-serif;font-size:0.7rem;color:var(--ink2);
-  border:1px solid var(--border);border-radius:6px;padding:4px 11px;max-width:200px;text-align:center;line-height:1.4}
-#btn-clear{background:rgba(255,79,106,0.07);border:1px solid rgba(255,79,106,0.25);color:var(--red);
-  font-family:'JetBrains Mono',monospace;font-size:0.58rem;border-radius:5px;padding:5px 10px;cursor:pointer;transition:all 0.2s}
+.brow{display:flex;align-items:center;gap:5px}
+.blbl{font-size:0.52rem;color:var(--ink3);width:46px;text-align:right}
+.btrack{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.bfill{height:100%;border-radius:2px;transition:width 0.5s ease;width:0%}
+.bfill.gray{background:var(--gray)}.bfill.gold{background:var(--gold);box-shadow:0 0 5px var(--gold-glow)}
+.bpct{font-size:0.52rem;color:var(--ink3);width:22px}
+#phase-msg{font-family:'Noto Sans SC',sans-serif;font-size:0.68rem;color:var(--ink2);
+  border:1px solid var(--border);border-radius:6px;padding:4px 10px;
+  max-width:190px;text-align:center;line-height:1.4}
+#btn-clear{background:rgba(255,79,106,0.07);border:1px solid rgba(255,79,106,0.25);
+  color:var(--red);font-family:'JetBrains Mono',monospace;font-size:0.57rem;
+  border-radius:5px;padding:4px 9px;cursor:pointer;transition:all 0.2s}
 #btn-clear:hover{background:rgba(255,79,106,0.14)}
 
-/* ══════════ Tooltip ══════════ */
-#tooltip{position:fixed;z-index:500;display:none;background:var(--bg2);
-  border:1.5px solid var(--gold);border-radius:13px;padding:12px 13px;
-  box-shadow:0 18px 52px rgba(0,0,0,0.65),0 0 28px var(--gold-glow);
-  min-width:175px;max-width:220px;animation:tipIn 0.18s cubic-bezier(0.34,1.56,0.64,1);pointer-events:auto}
+/* ── Tooltip ── */
+#tooltip{position:fixed;z-index:500;display:none;
+  background:var(--bg2);border:1.5px solid var(--gold);border-radius:14px;
+  padding:14px 15px;min-width:190px;max-width:240px;
+  box-shadow:0 20px 56px rgba(0,0,0,0.7),0 0 30px var(--gold-glow);
+  pointer-events:auto;animation:tipIn 0.18s cubic-bezier(0.34,1.56,0.64,1)}
 #tooltip.show{display:block}
 @keyframes tipIn{from{opacity:0;transform:scale(0.82) translateY(6px)}to{opacity:1;transform:none}}
-#tip-img{width:100%;height:100px;object-fit:cover;border-radius:7px;border:1px solid var(--border2);display:block}
-#tip-en{font-family:'Noto Sans SC',sans-serif;font-size:0.8rem;font-weight:700;color:var(--gold);margin-top:7px;line-height:1.4}
-#tip-zh{font-family:'Noto Sans SC',sans-serif;font-size:0.68rem;color:var(--ink2);font-style:italic;margin-top:3px;line-height:1.4}
-#tip-cat{font-size:0.52rem;text-transform:uppercase;letter-spacing:0.09em;color:var(--ink3);margin-top:4px}
-#tip-tts{margin-top:8px;width:100%;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.28);
-  color:var(--gold);font-family:'Bebas Neue',sans-serif;font-size:0.7rem;letter-spacing:0.1em;
+#tip-verb{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:0.06em;
+  color:var(--gold);line-height:1;text-shadow:0 0 12px var(--gold-glow)}
+#tip-phrase{font-family:'Noto Sans SC',sans-serif;font-size:0.8rem;font-weight:400;
+  color:var(--ink);margin-top:6px;line-height:1.5;border-left:2px solid var(--gold);padding-left:8px}
+#tip-zh{font-family:'Noto Sans SC',sans-serif;font-size:0.72rem;color:var(--ink2);
+  font-style:italic;margin-top:4px;padding-left:10px;line-height:1.5}
+#tip-cat{font-size:0.5rem;text-transform:uppercase;letter-spacing:0.1em;
+  color:var(--ink3);margin-top:6px}
+#tip-tts{margin-top:9px;width:100%;background:rgba(240,192,64,0.1);
+  border:1px solid rgba(240,192,64,0.28);color:var(--gold);
+  font-family:'Bebas Neue',sans-serif;font-size:0.68rem;letter-spacing:0.1em;
   border-radius:6px;padding:5px;cursor:pointer;transition:all 0.2s;text-align:center}
 #tip-tts:hover{background:rgba(240,192,64,0.18)}
-#tip-tts.speaking{animation:ttsR 0.65s ease-in-out infinite;border-color:var(--gold)}
-@keyframes ttsR{0%,100%{box-shadow:0 0 0 0 rgba(240,192,64,0.4)}50%{box-shadow:0 0 0 5px rgba(240,192,64,0)}}
+#tip-tts.speaking{animation:ttsR 0.65s ease-in-out infinite;color:var(--gold2)}
+@keyframes ttsR{0%,100%{box-shadow:0 0 0 0 rgba(240,192,64,0.5)}50%{box-shadow:0 0 0 6px rgba(240,192,64,0)}}
 
-/* ══════════ QR 弹窗 ══════════ */
-#qr-modal{display:none;position:fixed;inset:0;z-index:600;background:rgba(8,12,20,0.85);
-  backdrop-filter:blur(6px);align-items:center;justify-content:center}
+/* ── QR 弹窗 ── */
+#qr-modal{display:none;position:fixed;inset:0;z-index:600;
+  background:rgba(8,12,20,0.88);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center}
 #qr-modal.show{display:flex}
 #qr-box{background:var(--bg2);border:1.5px solid var(--border2);border-radius:18px;
   padding:28px 32px;display:flex;flex-direction:column;align-items:center;gap:14px;
-  box-shadow:0 24px 64px rgba(0,0,0,0.7)}
+  box-shadow:0 24px 64px rgba(0,0,0,0.75)}
 #qr-canvas{border-radius:10px;background:#fff;padding:8px}
 .qr-title{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;letter-spacing:0.08em;color:var(--gold)}
-.qr-url{font-size:0.65rem;color:var(--ink2);word-break:break-all;text-align:center;max-width:260px}
-#qr-close{background:var(--border);border:none;color:var(--ink2);font-family:'Bebas Neue',sans-serif;
-  font-size:0.75rem;letter-spacing:0.1em;border-radius:7px;padding:7px 20px;cursor:pointer;transition:all 0.2s}
+.qr-sub{font-family:'Noto Sans SC',sans-serif;font-size:0.7rem;color:var(--ink2);text-align:center}
+.qr-url{font-size:0.6rem;color:var(--ink3);word-break:break-all;text-align:center;max-width:260px}
+#qr-close{background:var(--border);border:none;color:var(--ink2);
+  font-family:'Bebas Neue',sans-serif;font-size:0.72rem;letter-spacing:0.1em;
+  border-radius:7px;padding:7px 20px;cursor:pointer;transition:all 0.2s}
 #qr-close:hover{background:var(--border2);color:var(--ink)}
 
-/* ══════════ 学生端 ══════════ */
-#student{display:none;position:fixed;inset:0;z-index:200;background:var(--bg);
-  flex-direction:column;align-items:center}
+/* ── 学生端 ── */
+#student{display:none;position:fixed;inset:0;z-index:200;
+  background:var(--bg);flex-direction:column;align-items:center}
 #student.active{display:flex}
 .stu-hdr{width:100%;background:rgba(8,12,20,0.97);border-bottom:1px solid var(--border);
   padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
@@ -195,45 +220,42 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   text-shadow:0 0 12px var(--gold-glow)}
 #stu-timer.urgent{color:var(--red)}
 .stu-body{flex:1;width:100%;max-width:460px;display:flex;flex-direction:column;
-  align-items:center;padding:24px 18px;gap:16px;overflow-y:auto}
+  align-items:center;padding:28px 18px;gap:16px;overflow-y:auto}
 .stu-prompt{font-family:'Noto Sans SC',sans-serif;font-size:0.95rem;color:var(--ink);
-  text-align:center;line-height:1.7}
+  text-align:center;line-height:1.8}
 .stu-prompt em{color:var(--gold);font-style:normal;font-weight:700}
+.stu-status{font-size:0.68rem;color:var(--ink3);text-align:center}
+.stu-status.ok{color:var(--green)}.stu-status.err{color:var(--red)}
 #stu-input{width:100%;background:var(--bg2);border:2px solid var(--border2);border-radius:12px;
-  color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:1rem;
-  padding:13px 15px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;text-align:center}
+  color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:1.05rem;
+  padding:14px 15px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;text-align:center}
 #stu-input:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(74,158,255,0.12)}
-#stu-input::placeholder{color:var(--ink3)}
-#stu-send{width:100%;background:var(--blue);color:#fff;font-family:'Bebas Neue',sans-serif;
-  font-size:1.05rem;letter-spacing:0.12em;border:none;border-radius:12px;
-  padding:13px;cursor:pointer;transition:all 0.2s}
+#stu-input::placeholder{color:var(--ink3);font-size:0.9rem}
+#stu-send{width:100%;background:var(--blue);color:#fff;
+  font-family:'Bebas Neue',sans-serif;font-size:1.05rem;letter-spacing:0.12em;
+  border:none;border-radius:12px;padding:14px;cursor:pointer;transition:all 0.2s}
 #stu-send:hover{background:var(--blue2)}
 #stu-send:disabled{background:var(--border2);color:var(--ink3)}
 #stu-tags{width:100%;display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
-.stag{background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);border-radius:20px;
-  color:var(--blue2);font-size:0.75rem;padding:3px 11px;animation:tpop 0.3s ease}
+.stag{background:rgba(74,158,255,0.1);border:1px solid rgba(74,158,255,0.25);
+  border-radius:20px;color:var(--blue2);font-size:0.75rem;padding:3px 12px;
+  animation:tpop 0.3s ease}
 @keyframes tpop{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
 .stu-done{font-family:'Noto Sans SC',sans-serif;font-size:1rem;color:var(--green);
-  text-align:center;display:none;line-height:1.7}
-#stu-score{font-family:'Bebas Neue',sans-serif;font-size:2rem;color:var(--gold)}
-.stu-status{font-size:0.7rem;color:var(--ink3);text-align:center}
-.stu-status.ok{color:var(--green)}
-.stu-status.err{color:var(--red)}
+  text-align:center;display:none;line-height:1.8}
+#stu-score{font-family:'Bebas Neue',sans-serif;font-size:2.2rem;color:var(--gold);
+  display:block;text-shadow:0 0 14px var(--gold-glow)}
 
 /* 粒子 */
-.spark{position:fixed;pointer-events:none;width:6px;height:6px;border-radius:50%;z-index:999;
-  animation:spk 0.75s ease-out forwards}
-@keyframes spk{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.1)}}
-
-/* 连接状态指示 */
-#conn-dot{width:8px;height:8px;border-radius:50%;background:var(--gray);flex-shrink:0;transition:background 0.3s}
-#conn-dot.ok{background:var(--green);box-shadow:0 0 6px rgba(61,214,140,0.5)}
-#conn-dot.err{background:var(--red)}
+.spark{position:fixed;pointer-events:none;width:6px;height:6px;border-radius:50%;
+  z-index:999;animation:spk 0.75s ease-out forwards}
+@keyframes spk{0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(0.1)}}
 </style>
 </head>
 <body>
 
-<!-- ══════════ 教师大屏 ══════════ -->
+<!-- ══ 教师大屏 ══ -->
 <div id="teacher">
   <div id="hud">
     <div class="hud-title">分级词云诊断 <em>· Word Cloud</em></div>
@@ -242,7 +264,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="leg"><div class="leg-dot" style="background:var(--gold)"></div>高阶 Advanced ✦</div>
     </div>
     <div id="word-count">共 <b id="total-n">0</b> 词</div>
-    <div id="conn-dot" title="Firebase 连接状态"></div>
+    <div id="conn-dot" title="Firebase连接状态"></div>
     <div class="spacer"></div>
     <button class="hbtn" id="btn-unlock-hud">✦ 解锁高阶词</button>
     <button class="hbtn" id="btn-qr">📱 学生二维码</button>
@@ -254,7 +276,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
   <div id="mid">
     <div id="left-panel">
-      <div class="sec-lbl">模拟输入 · Demo Input</div>
+      <div class="sec-lbl">模拟输入 · Demo</div>
       <div class="irow">
         <input id="word-input" type="text" placeholder="输入动词…" autocomplete="off" spellcheck="false">
         <button id="btn-send">发送</button>
@@ -264,7 +286,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="divl"></div>
       <button id="btn-unlock-panel">✦ 解锁全部高阶词 · Unlock All</button>
       <div class="divl"></div>
-      <div class="sec-lbl">提交记录 · Log</div>
+      <div class="sec-lbl">记录 · Log</div>
       <div id="log"></div>
     </div>
     <div id="cloud-wrap"><svg id="cloud-svg"></svg></div>
@@ -276,109 +298,105 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     <div class="sblk"><div class="sn gold" id="cnt-gold">0</div><div class="sl">Advanced 高阶</div></div>
     <div class="sdv"></div>
     <div class="tbars">
-      <div class="brow"><span class="blbl">Basic</span><div class="btrack"><div class="bfill gray" id="bar-b"></div></div><span class="bpct" id="pct-b">0%</span></div>
-      <div class="brow"><span class="blbl">Advanced</span><div class="btrack"><div class="bfill gold" id="bar-g"></div></div><span class="bpct" id="pct-g">0%</span></div>
+      <div class="brow"><span class="blbl">Basic</span>
+        <div class="btrack"><div class="bfill gray" id="bar-b"></div></div>
+        <span class="bpct" id="pct-b">0%</span></div>
+      <div class="brow"><span class="blbl">Advanced</span>
+        <div class="btrack"><div class="bfill gold" id="bar-g"></div></div>
+        <span class="bpct" id="pct-g">0%</span></div>
     </div>
     <div class="sdv"></div>
     <div id="phase-msg">等待开始 · Ready</div>
     <div class="spacer"></div>
-    <button id="btn-clear">✕ 清空词云</button>
+    <button id="btn-clear">✕ 清空</button>
   </div>
 </div>
 
 <!-- Tooltip -->
 <div id="tooltip">
-  <img id="tip-img" src="" alt="">
-  <div id="tip-en"></div>
+  <div id="tip-verb"></div>
+  <div id="tip-phrase"></div>
   <div id="tip-zh"></div>
   <div id="tip-cat"></div>
-  <button id="tip-tts">🔊 朗读 Read Aloud</button>
+  <button id="tip-tts">🔊 朗读例句 Read Aloud</button>
 </div>
 
 <!-- QR 弹窗 -->
 <div id="qr-modal">
   <div id="qr-box">
-    <div class="qr-title">📱 学生扫码进入 · Student QR Code</div>
+    <div class="qr-title">📱 学生扫码进入</div>
+    <div class="qr-sub">Student Scan to Join</div>
     <canvas id="qr-canvas" width="220" height="220"></canvas>
     <div class="qr-url" id="qr-url-text"></div>
     <button id="qr-close">关闭 Close</button>
   </div>
 </div>
 
-<!-- ══════════ 学生端 ══════════ -->
+<!-- 学生端 -->
 <div id="student">
   <div class="stu-hdr">
-    <div class="stu-htitle">📱 学生输入 · Student</div>
+    <div class="stu-htitle">📱 学生端 · Student</div>
     <div id="stu-timer">00:40</div>
   </div>
   <div class="stu-body">
     <div class="stu-prompt">
       主题：<em>做饭 · Cooking</em><br>
       40秒内输入尽可能多的<em>动词</em>！<br>
-      <small style="color:var(--ink3);font-size:0.78rem">Type as many cooking verbs as you can!</small>
+      <small style="color:var(--ink3);font-size:0.78rem">Type cooking verbs, one at a time!</small>
     </div>
-    <div class="stu-status" id="stu-conn-status">正在连接服务器…</div>
+    <div class="stu-status" id="stu-status">正在连接…</div>
     <input id="stu-input" type="text" placeholder="输入动词，按回车提交…" autocomplete="off" spellcheck="false">
     <button id="stu-send">发送 Submit</button>
     <div id="stu-tags"></div>
     <div class="stu-done" id="stu-done">
       ⏱ 时间到！Time's Up!<br>
-      你共提交了 <span id="stu-score">0</span> 个词！<br>
-      <small style="color:var(--ink2);font-size:0.8rem">Great job! 🎉</small>
+      你共提交了<br>
+      <span id="stu-score">0</span>
+      个词！Great job 🎉
     </div>
   </div>
 </div>
 
-<!-- QR 生成库 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
 <script>
-// ══════════════════════════════════════════════
-// 高阶词数据
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// 高阶词数据：显示单个动词，悬停显示例句+中文
+// ══════════════════════════════════════════
 const GOLD_DATA = [
-  {en:"clear the messy stove",         zh:"清理脏乱的炉灶",       category:"清理 Cleaning"},
-  {en:"discard the burnt bread",        zh:"丢弃烧焦的面包",       category:"清理 Cleaning"},
-  {en:"wipe away the spilled porridge", zh:"擦掉溢出的粥",         category:"清理 Cleaning"},
-  {en:"turn off the gas quickly",       zh:"迅速关掉煤气",         category:"操作 Equipment"},
-  {en:"adjust the flame to low heat",   zh:"将火调小",             category:"操作 Equipment"},
-  {en:"soak the hand in cold water",    zh:"把手浸在冷水中",       category:"急救 First Aid"},
-  {en:"rinse the burn under the tap",   zh:"在水龙头下冲洗烫伤处", category:"急救 First Aid"},
-  {en:"apply some ointment",            zh:"涂抹药膏",             category:"急救 First Aid"},
-  {en:"whisk the eggs and milk",        zh:"搅拌鸡蛋和牛奶",       category:"烹饪 Cooking"},
-  {en:"dip the bread into the mixture", zh:"将面包浸入混合液",     category:"烹饪 Cooking"},
-  {en:"spread some honey on the toast", zh:"在吐司上抹点蜂蜜",     category:"烹饪 Cooking"},
-  {en:"demonstrate the right way to fry",zh:"演示正确的煎法",      category:"指导 Teaching"},
-  {en:"supervise the whole process",    zh:"监督整个过程",         category:"指导 Teaching"},
-  {en:"arrange the food on a tray",     zh:"在托盘上摆放食物",     category:"呈现 Presenting"},
-  {en:"decorate the plate with fruit",  zh:"用水果装饰盘子",       category:"呈现 Presenting"},
+  // 清理类
+  { verb:"clear",   phrase:"clear the messy stove",         zh:"清理脏乱的炉灶",       cat:"清理 Cleaning" },
+  { verb:"discard", phrase:"discard the burnt bread",        zh:"丢弃烧焦的面包",       cat:"清理 Cleaning" },
+  { verb:"wipe",    phrase:"wipe away the spilled porridge", zh:"擦掉溢出的粥",         cat:"清理 Cleaning" },
+  // 操作类
+  { verb:"turn off",  phrase:"turn off the gas quickly",      zh:"迅速关掉煤气",         cat:"操作 Equipment" },
+  { verb:"adjust",    phrase:"adjust the flame to low heat",  zh:"将火调小",             cat:"操作 Equipment" },
+  // 急救类
+  { verb:"soak",   phrase:"soak the hand in cold water",    zh:"把手浸在冷水中",       cat:"急救 First Aid" },
+  { verb:"rinse",  phrase:"rinse the burn under the tap",   zh:"在水龙头下冲洗烫伤处", cat:"急救 First Aid" },
+  { verb:"apply",  phrase:"apply some ointment",            zh:"涂抹药膏",             cat:"急救 First Aid" },
+  // 烹饪类
+  { verb:"whisk",  phrase:"whisk the eggs and milk",        zh:"搅拌鸡蛋和牛奶",       cat:"烹饪 Cooking" },
+  { verb:"dip",    phrase:"dip the bread into the mixture", zh:"将面包浸入混合液",     cat:"烹饪 Cooking" },
+  { verb:"spread", phrase:"spread some honey on the toast", zh:"在吐司上抹点蜂蜜",     cat:"烹饪 Cooking" },
+  // 指导类
+  { verb:"demonstrate", phrase:"demonstrate the right way to fry", zh:"演示正确的煎法",   cat:"指导 Teaching" },
+  { verb:"supervise",   phrase:"supervise the whole process",      zh:"监督整个过程",     cat:"指导 Teaching" },
+  // 呈现类
+  { verb:"arrange",  phrase:"arrange the food on a tray",   zh:"在托盘上摆放食物",     cat:"呈现 Presenting" },
+  { verb:"decorate", phrase:"decorate the plate with fruit", zh:"用水果装饰盘子",       cat:"呈现 Presenting" },
 ];
 
-const TRIGGER_MAP = {
-  "clear":"clear the messy stove","discard":"discard the burnt bread",
-  "wipe":"wipe away the spilled porridge","turn":"turn off the gas quickly",
-  "adjust":"adjust the flame to low heat","soak":"soak the hand in cold water",
-  "rinse":"rinse the burn under the tap","apply":"apply some ointment",
-  "whisk":"whisk the eggs and milk","dip":"dip the bread into the mixture",
-  "spread":"spread some honey on the toast","demonstrate":"demonstrate the right way to fry",
-  "supervise":"supervise the whole process","arrange":"arrange the food on a tray",
-  "decorate":"decorate the plate with fruit",
-};
+// 触发词映射（学生输入某词时自动解锁对应高阶词）
+const TRIGGER_MAP = {};
+GOLD_DATA.forEach(d => { TRIGGER_MAP[d.verb.toLowerCase()] = d.verb; });
 
-const QUICK_LIST = ["make","do","put","cook","fry","boil","bake","cut","wash","stir","heat","mix","pour","peel","chop","serve"];
+// 基础词快选
+const QUICK_LIST = ["make","do","put","cook","fry","boil","bake","cut","wash",
+                    "stir","heat","mix","pour","peel","chop","serve","taste","add"];
 
-// ══════════════════════════════════════════════
-// 判断当前模式（学生端 or 教师端）
-// ══════════════════════════════════════════════
-const IS_STUDENT = new URLSearchParams(location.search).get("mode") === "student";
-if (IS_STUDENT) {
-  document.getElementById("student").classList.add("active");
-} 
-
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // 全局状态
-// ══════════════════════════════════════════════
-let wordMap   = {};        // { word: { tier, count, fs, x, y, data? } }
+// ══════════════════════════════════════════
+let wordMap   = {};   // key -> { verb, tier:'basic'|'gold', count, fs, x, y, data? }
 let timerVal  = 40;
 let timerID   = null;
 let isRunning = false;
@@ -386,10 +404,13 @@ let frozen    = false;
 let selectedVoice = null;
 let stuCount  = 0;
 let fbReady   = false;
+const IS_STUDENT = new URLSearchParams(location.search).get("mode") === "student";
 
-// ══════════════════════════════════════════════
-// 等待 Firebase 初始化完成
-// ══════════════════════════════════════════════
+if (IS_STUDENT) document.getElementById("student").classList.add("active");
+
+// ══════════════════════════════════════════
+// Firebase 就绪后监听数据
+// ══════════════════════════════════════════
 function onFbReady(cb) {
   if (window._fbReady) { cb(); return; }
   window.addEventListener("fb-ready", cb, { once: true });
@@ -397,35 +418,34 @@ function onFbReady(cb) {
 
 onFbReady(() => {
   fbReady = true;
-  // 更新连接状态指示点
   document.getElementById("conn-dot").classList.add("ok");
 
-  // 教师端：监听 Firebase 实时更新词云
   if (!IS_STUDENT) {
+    // 教师端：实时监听所有词并重绘词云
     window._fbListen(words => {
-      // 收到新数据时重建 wordMap 并重新渲染
       const newMap = {};
       words.forEach(w => {
         const key = w.toLowerCase().trim();
         if (!key) return;
+
+        // 查找是否是高阶词（匹配 verb 字段）
+        const goldEntry = GOLD_DATA.find(d => d.verb.toLowerCase() === key);
+
         if (newMap[key]) {
           newMap[key].count++;
           if (newMap[key].tier === "basic")
-            newMap[key].fs = Math.min(14 + newMap[key].count * 2, 26);
+            newMap[key].fs = Math.min(13 + newMap[key].count * 2, 28);
+        } else if (goldEntry) {
+          newMap[key] = { word: goldEntry.verb, tier:"gold", count:1, fs:22, data:goldEntry };
         } else {
-          // 判断是否为高阶词
-          const goldEntry = GOLD_DATA.find(d => d.en === key);
-          if (goldEntry) {
-            newMap[key] = { word:key, tier:"gold", count:1, fs:20, x:cW()/2, y:cH()/2, data:goldEntry };
-          } else {
-            newMap[key] = { word:key, tier:"basic", count:1, fs:14, x:cW()/2, y:cH()/2 };
-          }
+          newMap[key] = { word: key, tier:"basic", count:1, fs:13 };
         }
-        // 检查触发词
+
+        // 触发词检查
         const trigger = TRIGGER_MAP[key];
         if (trigger && !newMap[trigger.toLowerCase()]) {
-          const gd = GOLD_DATA.find(d => d.en === trigger);
-          if (gd) newMap[trigger.toLowerCase()] = { word:trigger, tier:"gold", count:1, fs:20, x:cW()/2, y:cH()/2, data:gd };
+          const gd = GOLD_DATA.find(d => d.verb.toLowerCase() === trigger.toLowerCase());
+          if (gd) newMap[trigger.toLowerCase()] = { word: gd.verb, tier:"gold", count:1, fs:22, data:gd };
         }
       });
       wordMap = newMap;
@@ -433,22 +453,21 @@ onFbReady(() => {
     });
   }
 
-  // 学生端：更新连接状态
   if (IS_STUDENT) {
-    const st = document.getElementById("stu-conn-status");
+    const st = document.getElementById("stu-status");
     st.textContent = "✅ 已连接，可以开始输入！";
     st.className = "stu-status ok";
   }
 });
 
-// ══════════════════════════════════════════════
-// TTS 初始化
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// TTS
+// ══════════════════════════════════════════
 function initTTS() {
   function pick() {
     const vs = window.speechSynthesis.getVoices();
     if (!vs.length) return;
-    const keys = ["david","mark","alex","daniel","james","reed"];
+    const keys = ["david","mark","alex","daniel","james","reed","guy","ryan"];
     let v = vs.find(v => v.lang.startsWith("en-US") && keys.some(k => v.name.toLowerCase().includes(k)));
     if (!v) v = vs.find(v => v.lang.startsWith("en-US"));
     if (!v) v = vs.find(v => v.lang.startsWith("en"));
@@ -471,322 +490,390 @@ function speak(text, btn) {
   window.speechSynthesis.speak(u);
 }
 
-// ══════════════════════════════════════════════
-// SVG 词云布局
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// 词云 SVG 布局
+// ══════════════════════════════════════════
 const svg    = d3.select("#cloud-svg");
-const gBasic = svg.append("g");
-const gGold  = svg.append("g");
+const gBasic = svg.append("g").attr("class","g-basic");
+const gGold  = svg.append("g").attr("class","g-gold");
+
+// 隐藏测量层
+const measureG = svg.append("g").style("opacity","0").style("pointer-events","none");
+const measureT = measureG.append("text").attr("dominant-baseline","middle");
+
+function measureWord(word, fs, isGold) {
+  measureT
+    .attr("font-size", fs)
+    .attr("font-family", isGold ? "'Noto Sans SC',sans-serif" : "'JetBrains Mono',monospace")
+    .attr("font-weight", isGold ? "700" : "400")
+    .text(word);
+  try {
+    const b = measureT.node().getBBox();
+    return { tw: b.width + (isGold ? 20 : 10), th: fs * 1.5 };
+  } catch(e) {
+    // fallback
+    return { tw: word.length * fs * (isGold ? 0.65 : 0.62) + 10, th: fs * 1.5 };
+  }
+}
 
 function cW() { return document.getElementById("cloud-wrap").offsetWidth; }
 function cH() { return document.getElementById("cloud-wrap").offsetHeight; }
 
-// 螺旋防重叠算法
+// 螺旋防重叠算法（精确测量版）
 function spiralLayout(items) {
-  const W = cW(), H = cH(), placed = [];
-  items.forEach(d => {
-    const cw = d.tier==="gold" ? d.fs*0.58 : d.fs*0.62;
-    const tw = d.word.length * cw + 6, th = d.fs * 1.25;
-    let angle=0, step=0, px=W/2, py=H/2;
-    for (let t=0; t<1000; t++) {
-      const r=step*3.8, tx=W/2+r*Math.cos(angle), ty=H/2+r*Math.sin(angle)*0.56;
-      const m=12;
-      if (tx-tw/2<m||tx+tw/2>W-m||ty-th/2<m||ty+th/2>H-m) { angle+=0.28;step+=0.06;continue; }
-      let hit=false;
-      for (const p of placed) {
-        if (Math.abs(tx-p.x)<(tw/2+p.tw/2+6)&&Math.abs(ty-p.y)<(th/2+p.th/2+4)){hit=true;break;}
+  const W = cW(), H = cH();
+  const placed = [];
+
+  items.forEach((d, idx) => {
+    const isGold = d.tier === "gold";
+    const { tw, th } = measureWord(d.word, d.fs, isGold);
+    const padX = isGold ? 14 : 8;
+    const padY = isGold ? 10 : 5;
+    const margin = 16;
+
+    // 随机起始角，防止全部堆同一侧
+    let angle = (idx * 2.4) + Math.random() * 0.5;
+    let step  = 0;
+    let px = W / 2, py = H / 2;
+    let ok = false;
+
+    for (let t = 0; t < 3000; t++) {
+      const r  = step * (isGold ? 5 : 4);
+      const tx = W / 2 + r * Math.cos(angle);
+      const ty = H / 2 + r * Math.sin(angle) * 0.65;
+
+      if (tx - tw/2 < margin || tx + tw/2 > W - margin ||
+          ty - th/2 < margin || ty + th/2 > H - margin) {
+        angle += 0.22; step += 0.05; continue;
       }
-      if (!hit) { px=tx; py=ty; break; }
-      angle+=0.28; step+=0.06;
+
+      let hit = false;
+      for (const p of placed) {
+        if (Math.abs(tx - p.x) < (tw/2 + p.tw/2 + padX) &&
+            Math.abs(ty - p.y) < (th/2 + p.th/2 + padY)) {
+          hit = true; break;
+        }
+      }
+
+      if (!hit) { px = tx; py = ty; ok = true; break; }
+      angle += 0.22; step += 0.05;
     }
-    d.x=px; d.y=py;
-    placed.push({x:px,y:py,tw:d.word.length*cw,th});
+
+    if (!ok) {
+      // 兜底：随机放在可用区域内
+      px = margin + tw/2 + Math.random() * Math.max(0, W - tw - margin*2);
+      py = margin + th/2 + Math.random() * Math.max(0, H - th - margin*2);
+    }
+
+    d.x = px; d.y = py;
+    placed.push({ x:px, y:py, tw, th });
   });
 }
 
+// 渲染词云
 function renderCloud() {
   const all    = Object.values(wordMap);
-  const basics = all.filter(d=>d.tier==="basic");
-  const golds  = all.filter(d=>d.tier==="gold");
-  spiralLayout([...golds,...basics]);
+  const basics = all.filter(d => d.tier === "basic");
+  const golds  = all.filter(d => d.tier === "gold");
+
+  // 高阶词先排（占优先位置），基础词后排
+  spiralLayout([...golds, ...basics]);
 
   // 基础词
-  const bs = gBasic.selectAll("text.wb").data(basics, d=>d.word);
+  const bs = gBasic.selectAll("text.wb").data(basics, d => d.word);
   bs.enter().append("text").attr("class","wb w-basic w-enter")
     .attr("text-anchor","middle").attr("dominant-baseline","middle")
-    .attr("x",d=>d.x).attr("y",d=>d.y).attr("font-size",d=>d.fs).text(d=>d.word);
-  bs.transition().duration(400).attr("x",d=>d.x).attr("y",d=>d.y).attr("font-size",d=>d.fs);
+    .attr("x", d=>d.x).attr("y", d=>d.y).attr("font-size", d=>d.fs)
+    .text(d => d.word);
+  bs.transition().duration(500)
+    .attr("x", d=>d.x).attr("y", d=>d.y).attr("font-size", d=>d.fs);
   bs.exit().transition().duration(300).style("opacity",0).remove();
 
-  // 高阶词
-  const gs = gGold.selectAll("text.wg").data(golds, d=>d.word);
+  // 高阶词（显示单个动词）
+  const gs = gGold.selectAll("text.wg").data(golds, d => d.word);
   gs.enter().append("text").attr("class","wg w-gold w-enter")
     .attr("text-anchor","middle").attr("dominant-baseline","middle")
-    .attr("x",d=>d.x).attr("y",d=>d.y).attr("font-size",d=>d.fs).text(d=>d.word)
-    .on("mouseenter",(e,d)=>showTip(e,d))
-    .on("mousemove", e=>moveTip(e))
-    .on("mouseleave",()=>hideTip())
-    .on("click",(e,d)=>{ spawnSparks(e.clientX,e.clientY); showTip(e,d); });
-  gs.transition().duration(400).attr("x",d=>d.x).attr("y",d=>d.y).attr("font-size",d=>d.fs);
+    .attr("x", d=>d.x).attr("y", d=>d.y).attr("font-size", d=>d.fs)
+    .text(d => d.word)   // ← 只显示单个动词
+    .on("mouseenter", (e,d) => showTip(e,d))
+    .on("mousemove",  e     => moveTip(e))
+    .on("mouseleave", ()    => hideTip())
+    .on("click",      (e,d) => { spawnSparks(e.clientX,e.clientY); showTip(e,d); });
+  gs.transition().duration(500)
+    .attr("x", d=>d.x).attr("y", d=>d.y).attr("font-size", d=>d.fs);
   gs.exit().transition().duration(300).style("opacity",0).remove();
 
   updateStats();
 }
 
-// ══════════════════════════════════════════════
-// 本地添加词（教师模拟输入）
-// ══════════════════════════════════════════════
-function addWord(raw) {
-  if (!raw||raw.trim()==="") return;
-  const word = raw.toLowerCase().trim();
-  // 推送到 Firebase（其他设备实时收到）
-  if (fbReady) window._fbPush(word);
-  addLog(word,"basic");
-}
-
-// 解锁单条高阶词（本地+Firebase）
-function unlockGold(en) {
-  const key = en.toLowerCase();
-  if (wordMap[key]) return;
-  if (fbReady) window._fbPush(en);
-}
-
-function unlockAllGold() {
-  GOLD_DATA.forEach(d => unlockGold(d.en));
-  setPhaseMsg("✦ 全部高阶词已解锁！All unlocked!");
-}
-
-// ══════════════════════════════════════════════
-// Tooltip
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// Tooltip（悬停显示完整例句+中文）
+// ══════════════════════════════════════════
 const tooltip = document.getElementById("tooltip");
-let tipVis = false;
+let tipVis = false, tipData = null;
 
 function showTip(event, d) {
   if (!d.data) return;
-  const {en,zh,category} = d.data;
-  const enc = encodeURIComponent(en.slice(0,18).toUpperCase());
-  document.getElementById("tip-img").src = `https://via.placeholder.com/210x100?text=${enc}`;
-  document.getElementById("tip-en").textContent  = en;
-  document.getElementById("tip-zh").textContent  = zh;
-  document.getElementById("tip-cat").textContent = "# "+category;
-  moveTip(event); tooltip.classList.add("show"); tipVis=true;
+  tipData = d.data;
+  document.getElementById("tip-verb").textContent   = d.data.verb.toUpperCase();
+  document.getElementById("tip-phrase").textContent = d.data.phrase;
+  document.getElementById("tip-zh").textContent     = d.data.zh;
+  document.getElementById("tip-cat").textContent    = "# " + d.data.cat;
+  moveTip(event);
+  tooltip.classList.add("show");
+  tipVis = true;
 }
+
 function moveTip(event) {
   if (!tipVis) return;
-  const tw=tooltip.offsetWidth||200, th=tooltip.offsetHeight||200;
-  let x=event.clientX+16, y=event.clientY-90;
-  if (x+tw>window.innerWidth-10)  x=event.clientX-tw-16;
-  if (y+th>window.innerHeight-10) y=window.innerHeight-th-10;
-  if (y<62) y=62;
-  tooltip.style.left=x+"px"; tooltip.style.top=y+"px";
+  const tw = tooltip.offsetWidth || 210;
+  const th = tooltip.offsetHeight || 180;
+  let x = event.clientX + 18, y = event.clientY - 100;
+  if (x + tw > window.innerWidth  - 10) x = event.clientX - tw - 18;
+  if (y + th > window.innerHeight - 10) y = window.innerHeight - th - 10;
+  if (y < 60) y = 60;
+  tooltip.style.left = x + "px";
+  tooltip.style.top  = y + "px";
 }
-function hideTip() { tooltip.classList.remove("show"); tipVis=false; }
+
+function hideTip() { tooltip.classList.remove("show"); tipVis = false; }
 
 document.getElementById("tip-tts").addEventListener("click", () => {
-  const t = document.getElementById("tip-en").textContent;
-  if (t) speak(t, document.getElementById("tip-tts"));
+  if (tipData) speak(tipData.phrase, document.getElementById("tip-tts"));
 });
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// 添加词（教师模拟输入）
+// ══════════════════════════════════════════
+function addWord(raw) {
+  if (!raw || !raw.trim()) return;
+  const word = raw.toLowerCase().trim();
+  if (fbReady) window._fbPush(word);
+  addLog(word, "basic");
+}
+
+function unlockGold(verb) {
+  const key = verb.toLowerCase();
+  if (wordMap[key]) return;
+  if (fbReady) window._fbPush(verb.toLowerCase());
+}
+
+function unlockAllGold() {
+  GOLD_DATA.forEach(d => unlockGold(d.verb));
+  setPhaseMsg("✦ 高阶词已全部解锁！");
+}
+
+// ══════════════════════════════════════════
 // 统计更新
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 function updateStats() {
   const all = Object.values(wordMap);
-  const nb = all.filter(w=>w.tier==="basic").length;
-  const ng = all.filter(w=>w.tier==="gold").length;
-  const tot = all.length||1;
+  const nb  = all.filter(w => w.tier==="basic").length;
+  const ng  = all.filter(w => w.tier==="gold").length;
+  const tot = all.length || 1;
+
   document.getElementById("cnt-basic").textContent = nb;
   document.getElementById("cnt-gold").textContent  = ng;
   document.getElementById("total-n").textContent   = all.length;
-  const pb=Math.round(nb/tot*100), pg=Math.round(ng/tot*100);
-  document.getElementById("bar-b").style.width = pb+"%";
-  document.getElementById("bar-g").style.width = pg+"%";
-  document.getElementById("pct-b").textContent = pb+"%";
-  document.getElementById("pct-g").textContent = pg+"%";
-  if (all.length===0)    setPhaseMsg("输入动词开始诊断");
-  else if (ng===0)       setPhaseMsg("尝试输入高阶动词！");
-  else if (ng>=8)        setPhaseMsg(`✦ 优秀！${ng} 个高阶短语！`);
-  else                   setPhaseMsg(`已有 ${ng} 个高阶短语`);
+
+  const pb = Math.round(nb/tot*100), pg = Math.round(ng/tot*100);
+  document.getElementById("bar-b").style.width = pb + "%";
+  document.getElementById("bar-g").style.width = pg + "%";
+  document.getElementById("pct-b").textContent = pb + "%";
+  document.getElementById("pct-g").textContent = pg + "%";
+
+  if (all.length === 0)  setPhaseMsg("输入动词开始 · Start");
+  else if (ng === 0)     setPhaseMsg("尝试高阶动词！Try more!");
+  else if (ng >= 10)     setPhaseMsg(`✦ 优秀！${ng} 个高阶词！`);
+  else                   setPhaseMsg(`已解锁 ${ng} 个高阶词`);
 }
+
 function setPhaseMsg(m) { document.getElementById("phase-msg").textContent = m; }
 
 function addLog(word, tier) {
   const el = document.createElement("div");
   el.className = `log-e log-${tier}`;
-  el.textContent = tier==="gold" ? `✦ ${word}` : word;
+  el.textContent = tier === "gold" ? `✦ ${word}` : word;
   const log = document.getElementById("log");
   log.insertBefore(el, log.firstChild);
-  while (log.children.length>30) log.removeChild(log.lastChild);
+  while (log.children.length > 30) log.removeChild(log.lastChild);
 }
 
-// ══════════════════════════════════════════════
-// 粒子烟花
-// ══════════════════════════════════════════════
-function spawnSparks(cx,cy) {
-  const cols=["#f0c040","#ffd060","#ffffff","#4a9eff","#ff7c3a"];
-  for (let i=0;i<16;i++) {
-    const el=document.createElement("div"); el.className="spark";
-    const a=(i/16)*Math.PI*2, r=36+Math.random()*50;
-    el.style.cssText=`left:${cx}px;top:${cy}px;background:${cols[i%cols.length]};--dx:${Math.cos(a)*r}px;--dy:${Math.sin(a)*r}px`;
-    document.body.appendChild(el); setTimeout(()=>el.remove(),800);
+// ══════════════════════════════════════════
+// 粒子特效
+// ══════════════════════════════════════════
+function spawnSparks(cx, cy) {
+  const cols = ["#f0c040","#ffd060","#ffffff","#4a9eff","#ff7c3a"];
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement("div");
+    el.className = "spark";
+    const a = (i/18)*Math.PI*2, r = 36 + Math.random()*55;
+    el.style.cssText = `left:${cx}px;top:${cy}px;background:${cols[i%cols.length]};`
+      + `--dx:${Math.cos(a)*r}px;--dy:${Math.sin(a)*r}px`;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 800);
   }
 }
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // 计时器
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 function startTimer() {
   if (isRunning) return;
-  isRunning=true; frozen=false; timerVal=40;
-  document.getElementById("btn-start").disabled=true;
-  document.getElementById("btn-start").textContent="计时中…";
-  timerID = setInterval(()=>{
+  isRunning = true; frozen = false; timerVal = 40;
+  document.getElementById("btn-start").disabled = true;
+  document.getElementById("btn-start").textContent = "计时中…";
+
+  timerID = setInterval(() => {
     timerVal--;
-    const s=timerVal<10?"0"+timerVal:timerVal;
-    document.getElementById("timer-disp").textContent=`00:${s}`;
-    document.getElementById("stu-timer").textContent=`00:${s}`;
-    if (timerVal<=10) {
+    const s = timerVal < 10 ? "0" + timerVal : timerVal;
+    document.getElementById("timer-disp").textContent  = `00:${s}`;
+    document.getElementById("stu-timer").textContent   = `00:${s}`;
+    if (timerVal <= 10) {
       document.getElementById("timer-disp").classList.add("urgent");
       document.getElementById("stu-timer").classList.add("urgent");
     }
-    if (timerVal<=0) {
-      clearInterval(timerID); isRunning=false; frozen=true;
-      document.getElementById("timer-disp").textContent="时间到！";
+    if (timerVal <= 0) {
+      clearInterval(timerID); isRunning = false; frozen = true;
+      document.getElementById("timer-disp").textContent = "时间到！";
       document.getElementById("timer-disp").classList.remove("urgent");
-      document.getElementById("btn-start").textContent="▶ 再来一次";
-      document.getElementById("btn-start").disabled=false;
-      document.getElementById("stu-done").style.display="block";
-      document.getElementById("stu-score").textContent=stuCount;
-      document.getElementById("stu-send").disabled=true;
-      document.getElementById("stu-input").disabled=true;
+      document.getElementById("btn-start").textContent = "▶ 再来一次";
+      document.getElementById("btn-start").disabled = false;
+      document.getElementById("stu-done").style.display = "block";
+      document.getElementById("stu-score").textContent  = stuCount;
+      document.getElementById("stu-send").disabled = true;
+      document.getElementById("stu-input").disabled = true;
       setPhaseMsg("⏱ 时间到！查看结果");
     }
-  },1000);
+  }, 1000);
 }
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // 学生端提交
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 function stuSubmit() {
   if (frozen) return;
   const val = document.getElementById("stu-input").value.trim();
   if (!val) return;
-  document.getElementById("stu-input").value="";
+  document.getElementById("stu-input").value = "";
   stuCount++;
-  // 推送到 Firebase
   if (fbReady) {
     window._fbPush(val.toLowerCase());
   } else {
-    const st=document.getElementById("stu-conn-status");
-    st.textContent="⚠️ 未连接，请刷新页面重试";
-    st.className="stu-status err";
+    const st = document.getElementById("stu-status");
+    st.textContent = "⚠️ 未连接，请刷新重试";
+    st.className = "stu-status err";
     return;
   }
-  // 显示 tag
-  const tag=document.createElement("div");
-  tag.className="stag"; tag.textContent=val;
+  const tag = document.createElement("div");
+  tag.className = "stag"; tag.textContent = val;
   document.getElementById("stu-tags").appendChild(tag);
   document.getElementById("stu-input").focus();
 }
 
-// ══════════════════════════════════════════════
-// 二维码生成（使用 QRCode.js）
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// 二维码生成
+// ══════════════════════════════════════════
 function showQR() {
-  const studentURL = location.href.split("?")[0] + "?mode=student";
-  document.getElementById("qr-url-text").textContent = studentURL;
+  const url = location.href.split("?")[0] + "?mode=student";
+  document.getElementById("qr-url-text").textContent = url;
   const canvas = document.getElementById("qr-canvas");
   const ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,220,220);
+  ctx.clearRect(0, 0, 220, 220);
 
-  // 使用 QRCode.js 生成
   const tmp = document.createElement("div");
-  new QRCode(tmp, {
-    text: studentURL,
-    width: 204, height: 204,
-    colorDark: "#000000", colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.M
-  });
+  new QRCode(tmp, { text:url, width:204, height:204,
+    colorDark:"#000000", colorLight:"#ffffff", correctLevel:QRCode.CorrectLevel.M });
   setTimeout(() => {
     const img = tmp.querySelector("img") || tmp.querySelector("canvas");
     if (img) {
       const i = new Image();
       i.onload = () => { ctx.fillStyle="#fff"; ctx.fillRect(0,0,220,220); ctx.drawImage(i,8,8,204,204); };
-      i.src = img.tagName==="CANVAS" ? img.toDataURL() : img.src;
+      i.src = img.tagName === "CANVAS" ? img.toDataURL() : img.src;
     }
-  }, 100);
+  }, 150);
 
   document.getElementById("qr-modal").classList.add("show");
 }
 
-// ══════════════════════════════════════════════
-// 快选按钮渲染
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
+// 快选按钮
+// ══════════════════════════════════════════
 function renderQuick() {
   const w = document.getElementById("qw");
   QUICK_LIST.forEach(word => {
-    const b=document.createElement("button"); b.className="qb"; b.textContent=word;
-    b.onclick=()=>addWord(word); w.appendChild(b);
+    const b = document.createElement("button");
+    b.className = "qb"; b.textContent = word;
+    b.onclick = () => addWord(word);
+    w.appendChild(b);
   });
 }
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // 事件绑定
-// ══════════════════════════════════════════════
-document.getElementById("btn-send").addEventListener("click",()=>{
-  const v=document.getElementById("word-input").value;
-  if (v.trim()){ addWord(v); document.getElementById("word-input").value=""; }
+// ══════════════════════════════════════════
+document.getElementById("btn-send").addEventListener("click", () => {
+  const v = document.getElementById("word-input").value;
+  if (v.trim()) { addWord(v); document.getElementById("word-input").value = ""; }
 });
-document.getElementById("word-input").addEventListener("keydown",e=>{
-  if (e.key==="Enter") document.getElementById("btn-send").click();
+document.getElementById("word-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("btn-send").click();
 });
-document.getElementById("btn-start").addEventListener("click",()=>{
-  timerVal=40; isRunning=false; frozen=false;
+document.getElementById("btn-start").addEventListener("click", () => {
+  timerVal = 40; isRunning = false; frozen = false;
   document.getElementById("timer-disp").classList.remove("urgent");
-  document.getElementById("timer-disp").textContent="00:40";
+  document.getElementById("timer-disp").textContent = "00:40";
+  document.getElementById("stu-timer").classList.remove("urgent");
   startTimer();
 });
 document.getElementById("btn-unlock-hud").addEventListener("click",   unlockAllGold);
 document.getElementById("btn-unlock-panel").addEventListener("click",  unlockAllGold);
-document.getElementById("btn-qr").addEventListener("click",    showQR);
-document.getElementById("qr-close").addEventListener("click",  ()=>document.getElementById("qr-modal").classList.remove("show"));
-document.getElementById("cloud-wrap").addEventListener("click", e=>{ if (!e.target.classList.contains("wg")) hideTip(); });
-
-document.getElementById("btn-clear").addEventListener("click",()=>{
+document.getElementById("btn-qr").addEventListener("click", showQR);
+document.getElementById("qr-close").addEventListener("click", () =>
+  document.getElementById("qr-modal").classList.remove("show"));
+document.getElementById("cloud-wrap").addEventListener("click", e => {
+  if (!e.target.classList.contains("wg")) hideTip();
+});
+document.getElementById("btn-clear").addEventListener("click", () => {
   if (fbReady) window._fbClear();
-  wordMap={}; gBasic.selectAll("*").remove(); gGold.selectAll("*").remove();
-  document.getElementById("log").innerHTML="";
-  frozen=false; isRunning=false; clearInterval(timerID); timerVal=40;
-  document.getElementById("timer-disp").textContent="00:40";
+  wordMap = {};
+  gBasic.selectAll("*").remove();
+  gGold.selectAll("*").remove();
+  document.getElementById("log").innerHTML = "";
+  frozen = false; isRunning = false;
+  clearInterval(timerID); timerVal = 40;
+  document.getElementById("timer-disp").textContent = "00:40";
   document.getElementById("timer-disp").classList.remove("urgent");
-  document.getElementById("btn-start").disabled=false;
-  document.getElementById("btn-start").textContent="▶ 开始诊断";
-  document.getElementById("stu-done").style.display="none";
-  document.getElementById("stu-send").disabled=false;
-  document.getElementById("stu-input").disabled=false;
-  stuCount=0; updateStats();
+  document.getElementById("btn-start").disabled = false;
+  document.getElementById("btn-start").textContent = "▶ 开始诊断";
+  document.getElementById("stu-done").style.display = "none";
+  document.getElementById("stu-send").disabled = false;
+  document.getElementById("stu-input").disabled = false;
+  stuCount = 0;
+  updateStats();
 });
 
 // 学生端
 document.getElementById("stu-send").addEventListener("click", stuSubmit);
-document.getElementById("stu-input").addEventListener("keydown",e=>{ if (e.key==="Enter") stuSubmit(); });
+document.getElementById("stu-input").addEventListener("keydown", e => {
+  if (e.key === "Enter") stuSubmit();
+});
 
-window.addEventListener("resize",()=>renderCloud());
+window.addEventListener("resize", () => renderCloud());
 
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 // 初始化
-// ══════════════════════════════════════════════
+// ══════════════════════════════════════════
 if (!IS_STUDENT) {
   renderQuick();
   initTTS();
   updateStats();
   setPhaseMsg("等待开始 · Ready");
-  // 初始种子词
-  setTimeout(()=>{
-    ["cook","fry","boil","cut","wash"].forEach((w,i)=>
-      setTimeout(()=>{ if(fbReady) window._fbPush(w); },i*150));
-  }, 1500);
+  // 延迟放入种子词（等Firebase连接好）
+  setTimeout(() => {
+    if (fbReady) ["cook","fry","boil","cut","wash"].forEach((w,i) =>
+      setTimeout(() => window._fbPush(w), i * 200));
+  }, 2000);
 }
 </script>
 </body>
