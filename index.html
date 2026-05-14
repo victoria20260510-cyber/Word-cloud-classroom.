@@ -436,7 +436,7 @@ onFbReady(() => {
           if (newMap[key].tier === "basic")
             newMap[key].fs = Math.min(13 + newMap[key].count * 2, 28);
         } else if (goldEntry) {
-          newMap[key] = { word: goldEntry.verb, tier:"gold", count:1, fs:22, data:goldEntry };
+          newMap[key] = { word: goldEntry.verb, tier:"gold", count:1, fs:55, data:goldEntry };
         } else {
           newMap[key] = { word: key, tier:"basic", count:1, fs:13 };
         }
@@ -445,7 +445,7 @@ onFbReady(() => {
         const trigger = TRIGGER_MAP[key];
         if (trigger && !newMap[trigger.toLowerCase()]) {
           const gd = GOLD_DATA.find(d => d.verb.toLowerCase() === trigger.toLowerCase());
-          if (gd) newMap[trigger.toLowerCase()] = { word: gd.verb, tier:"gold", count:1, fs:22, data:gd };
+          if (gd) newMap[trigger.toLowerCase()] = { word: gd.verb, tier:"gold", count:1, fs:55, data:gd };
         }
       });
       wordMap = newMap;
