@@ -362,27 +362,28 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 // 高阶词数据：显示单个动词，悬停显示例句+中文
 // ══════════════════════════════════════════
 const GOLD_DATA = [
-  // 清理类
-  { verb:"clear",   phrase:"clear the messy stove",         zh:"清理脏乱的炉灶",       cat:"清理 Cleaning" },
-  { verb:"discard", phrase:"discard the burnt bread",        zh:"丢弃烧焦的面包",       cat:"清理 Cleaning" },
-  { verb:"wipe",    phrase:"wipe away the spilled porridge", zh:"擦掉溢出的粥",         cat:"清理 Cleaning" },
-  // 操作类
-  { verb:"turn off",  phrase:"turn off the gas quickly",      zh:"迅速关掉煤气",         cat:"操作 Equipment" },
-  { verb:"adjust",    phrase:"adjust the flame to low heat",  zh:"将火调小",             cat:"操作 Equipment" },
-  // 急救类
-  { verb:"soak",   phrase:"soak the hand in cold water",    zh:"把手浸在冷水中",       cat:"急救 First Aid" },
-  { verb:"rinse",  phrase:"rinse the burn under the tap",   zh:"在水龙头下冲洗烫伤处", cat:"急救 First Aid" },
-  { verb:"apply",  phrase:"apply some ointment",            zh:"涂抹药膏",             cat:"急救 First Aid" },
-  // 烹饪类
-  { verb:"whisk",  phrase:"whisk the eggs and milk",        zh:"搅拌鸡蛋和牛奶",       cat:"烹饪 Cooking" },
-  { verb:"dip",    phrase:"dip the bread into the mixture", zh:"将面包浸入混合液",     cat:"烹饪 Cooking" },
-  { verb:"spread", phrase:"spread some honey on the toast", zh:"在吐司上抹点蜂蜜",     cat:"烹饪 Cooking" },
-  // 指导类
-  { verb:"demonstrate", phrase:"demonstrate the right way to fry", zh:"演示正确的煎法",   cat:"指导 Teaching" },
-  { verb:"supervise",   phrase:"supervise the whole process",      zh:"监督整个过程",     cat:"指导 Teaching" },
-  // 呈现类
-  { verb:"arrange",  phrase:"arrange the food on a tray",   zh:"在托盘上摆放食物",     cat:"呈现 Presenting" },
-  { verb:"decorate", phrase:"decorate the plate with fruit", zh:"用水果装饰盘子",       cat:"呈现 Presenting" },
+  { verb:"peel",    phrase:"Peel the potatoes",       zh:"削土豆皮",                          cat:"烹饪 Cooking" },
+  { verb:"chop",    phrase:"Chop the onions",          zh:"把洋葱剁碎",                        cat:"烹饪 Cooking" },
+  { verb:"slice",   phrase:"Slice the bread",          zh:"把面包切成片",                      cat:"烹饪 Cooking" },
+  { verb:"crack",   phrase:"Crack the eggs",           zh:"打蛋（敲开蛋壳）",                  cat:"烹饪 Cooking" },
+  { verb:"mix",     phrase:"Mix the ingredients",      zh:"把食材混合均匀",                    cat:"烹饪 Cooking" },
+  { verb:"beat",    phrase:"Beat the eggs",            zh:"打蛋（用力快速搅拌）",              cat:"烹饪 Cooking" },
+  { verb:"stir",    phrase:"Stir the sauce",           zh:"搅拌酱汁（缓慢打圈）",              cat:"烹饪 Cooking" },
+  { verb:"pour",    phrase:"Pour the milk",            zh:"倒牛奶",                            cat:"烹饪 Cooking" },
+  { verb:"add",     phrase:"Add a pinch of salt",      zh:"加入一小撮盐",                      cat:"烹饪 Cooking" },
+  { verb:"boil",    phrase:"Boil the water",           zh:"烧开水（大火沸腾）",                cat:"烹饪 Cooking" },
+  { verb:"fry",     phrase:"Fry the chicken",          zh:"炸鸡／煎鸡肉",                      cat:"烹饪 Cooking" },
+  { verb:"steam",   phrase:"Steam the fish",           zh:"清蒸鱼",                            cat:"烹饪 Cooking" },
+  { verb:"bake",    phrase:"Bake a cake",              zh:"烤蛋糕（在烤箱里加热）",            cat:"烹饪 Cooking" },
+  { verb:"roast",   phrase:"Roast the chicken",        zh:"烤鸡（在烤箱里长时间烘烤）",        cat:"烹饪 Cooking" },
+  { verb:"simmer",  phrase:"Simmer the soup",          zh:"文火炖汤（保持微沸状态）",          cat:"烹饪 Cooking" },
+  { verb:"salt",    phrase:"Salt the steak",           zh:"给牛排撒盐",                        cat:"烹饪 Cooking" },
+  { verb:"season",  phrase:"Season to taste",          zh:"调味至喜欢的口感",                  cat:"烹饪 Cooking" },
+  { verb:"spread",  phrase:"Spread the butter",        zh:"抹黄油／涂果酱",                    cat:"烹饪 Cooking" },
+  { verb:"cover",   phrase:"Cover the pot",            zh:"盖上锅盖",                          cat:"烹饪 Cooking" },
+  { verb:"heat",    phrase:"Heat the pan",             zh:"热锅",                              cat:"烹饪 Cooking" },
+  { verb:"cool",    phrase:"Cool it down",             zh:"晾凉／冷却",                        cat:"烹饪 Cooking" },
+  { verb:"serve",   phrase:"Serve immediately",        zh:"立即上菜／趁热分装",                cat:"烹饪 Cooking" },
 ];
 
 // 触发词映射（学生输入某词时自动解锁对应高阶词）
